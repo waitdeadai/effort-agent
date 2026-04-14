@@ -1,5 +1,7 @@
 # effort-agent
 
+<img src="effortagentmascot.png" alt="effort-agent mascot" width="200" />
+
 **"Your AI coding agent says 'Done.' after one pass. Then you find the bugs."**
 
 `effort-agent` ensures your AI coding agent actually does the work — thoroughly — on every iteration. Not just "good enough." Not just "should work." The actual work: verification, iteration, research, evidence. Write `effort.md` once (your process standards), then let `effort-agent` enforce it with `DONE | REDO | FAIL` verdicts.
@@ -210,42 +212,35 @@ See [docs/INTEGRATION.md](docs/INTEGRATION.md) for more patterns (CI/CD, FastAPI
 effort-agent/
 ├── LICENSE
 ├── README.md
+├── effortagentmascot.png
 ├── pyproject.toml
 ├── src/effort_agent/
 │   ├── __init__.py
-│   ├── version.py
 │   ├── core/
 │   │   ├── effort_agent.py        # Main EffortAgent class
-│   │   ├── verdict.py             # VERDICT enum
-│   │   ├── effort_config.py       # EffortConfig pydantic model
-│   │   ├── effort_memory.py       # JSONL memory store
-│   │   └── effort_result.py       # EffortResult dataclass
+│   │   ├── verdict.py              # VERDICT enum
+│   │   ├── effort_config.py        # EffortConfig pydantic model
+│   │   ├── effort_memory.py        # JSONL memory store + MemoryEntry
+│   │   └── effort_result.py        # EffortResult dataclass
 │   ├── evaluators/
-│   │   ├── shortcut_detector.py   # Regex pattern detector
+│   │   ├── shortcut_detector.py    # Regex pattern detector
 │   │   ├── verification_enforcer.py
 │   │   ├── iteration_tracker.py
 │   │   └── research_enforcer.py
-│   ├── prompts/
-│   │   ├── effort_system.py
-│   │   └── verdict_prompt.py
 │   ├── models/
-│   │   ├── effort_spec.py         # Parsed effort.md
-│   │   └── evaluation.py          # EvaluationResult
-│   ├── memory_store/
-│   │   ├── sqlite_store.py
-│   │   └── file_store.py
+│   │   └── effort_spec.py          # Parsed effort.md
+│   ├── cli/
+│   │   ├── main.py                 # Click CLI entry point
+│   │   ├── gate_cmd.py             # effort gate (CI/CD)
+│   │   ├── init_cmd.py             # effort init
+│   │   ├── lint_cmd.py             # effort lint
+│   │   └── evaluate_cmd.py         # effort evaluate
 │   └── integration/
-│       └── forgegod_integration.py
+│       └── mcp_server.py           # MCP stdio JSON-RPC server
 ├── tests/
-├── examples/
-│   ├── minimal/effort.md
-│   └── full-featured/
-│       ├── effort.md
-│       └── effort.memory
 └── docs/
     ├── GETTING_STARTED.md
-    ├── EFFORT_SPEC_FORMAT.md
-    └── INTEGRATION.md
+    └── EFFORT_SPEC_FORMAT.md
 ```
 
 ## Verdict Reference
