@@ -102,7 +102,11 @@ class EffortConfig(BaseModel):
 
         import re
 
-        all_patterns = list(SHORTCUT_PATTERNS.values())
+        # SHORTCUT_PATTERNS values are tuples: (name, [pattern1, pattern2], severity)
+        # Flatten to actual pattern strings
+        all_patterns: list[str] = []
+        for _name, patterns, _severity in SHORTCUT_PATTERNS.values():
+            all_patterns.extend(patterns)
         all_patterns.extend(self.shortcuts_blocked)
 
         for pattern in all_patterns:

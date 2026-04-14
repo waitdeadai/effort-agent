@@ -33,6 +33,7 @@ dependencies = [
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.25",
+    "pytest-cov>=4.0",
     "ruff>=0.9",
 ]
 sqlite = [
@@ -43,6 +44,13 @@ sqlite = [
 Homepage = "https://github.com/waitdead/effort-agent"
 Repository = "https://github.com/waitdead/effort-agent"
 Documentation = "https://github.com/waitdead/effort-agent/blob/main/docs/GETTING_STARTED.md"
+
+[project.scripts]
+effort = "effort_agent.cli.main:cli"
+effort-init = "effort_agent.cli.init_cmd:init"
+effort-gate = "effort_agent.cli.gate_cmd:gate"
+effort-lint = "effort_agent.cli.lint_cmd:lint"
+effort-evaluate = "effort_agent.cli.evaluate_cmd:evaluate"
 
 [tool.setuptools.packages.find]
 where = ["src"]

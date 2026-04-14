@@ -32,7 +32,7 @@ effort-agent complements taste-agent:
 from effort_agent.core.effort_agent import EffortAgent
 from effort_agent.core.effort_config import EffortConfig
 from effort_agent.core.effort_result import EffortResult
-from effort_agent.core.effort_memory import EffortMemory
+from effort_agent.core.effort_memory import EffortMemory, MemoryEntry
 from effort_agent.core.verdict import EffortVerdict
 
 __version__ = "0.1.0"
@@ -42,6 +42,15 @@ __all__ = [
     "EffortConfig",
     "EffortResult",
     "EffortMemory",
+    "MemoryEntry",
     "EffortVerdict",
     "__version__",
 ]
+
+# CLI components
+try:
+    from effort_agent.cli.main import cli as cli
+    from effort_agent.cli.main import main as main
+    __all__.extend(["cli", "main"])
+except ImportError:
+    pass

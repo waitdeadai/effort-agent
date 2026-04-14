@@ -1,5 +1,7 @@
 """EffortMemory — append-only JSONL store for effort evaluation history."""
 
+from __future__ import annotations
+
 import hashlib
 import json
 import re
@@ -9,6 +11,128 @@ from pathlib import Path
 from typing import Optional, Iterator
 
 from effort_agent.core.verdict import EffortVerdict
+
+
+class MemoryEntry:
+    """
+    A single memory entry with slots for efficient storage.
+
+    Attributes:
+        entry_id: Unique entry identifier.
+        timestamp: ISO-8601 timestamp.
+        task_hash: SHA-256 hash of task description.
+        task_description: Original task description.
+        file_path: Primary file path.
+        verdict: Verdict (done/redo/fail).
+        reasoning: Human-readable explanation.
+        issues: List of issues detected.
+        principle_violated: The principle that was violated.
+        category: Issue category.
+        was_applied: Whether REDO was applied.
+        applied_correctly: Whether applying the REDO fixed the issue.
+        retry_count: How many times this task was retried.
+        why_this_matters: Mentor-mode explanation.
+        severity: Severity level (P0/P1/P2/P3).
+    """
+
+    __slots__ = (
+        "entry_id",
+        "timestamp",
+        "task_hash",
+        "task_description",
+        "file_path",
+        "verdict",
+        "reasoning",
+        "issues",
+        "principle_violated",
+        "category",
+        "was_applied",
+        "applied_correctly",
+        "retry_count",
+        "why_this_matters",
+        "severity",
+    )
+
+    def __init__(
+        self,
+        entry_id: str,
+        timestamp: str,
+        task_hash: str,
+        task_description: str,
+        file_path: Optional[str],
+        verdict: str,
+        reasoning: str,
+        issues: list[str],
+        principle_violated: Optional[str] = None,
+        category: str = "process",
+        was_applied: bool = False,
+        applied_correctly: Optional[bool] = None,
+        retry_count: int = 0,
+        why_this_matters: str = "",
+        severity: str = "P2",
+    ):
+        self.entry_id = entry_id
+        self.timestamp = timestamp
+        self.task_hash = task_hash
+        self.task_description = task_description
+        self.file_path = file_path
+        self.verdict = verdict
+        self.reasoning = reasoning
+        self.issues = issues
+        self.principle_violated = principle_violated
+        self.category = category
+        self.was_applied = was_applied
+        self.applied_correctly = applied_correctly
+        self.retry_count = retry_count
+        self.why_this_matters = why_this_matters
+        self.severity = severity
+
+    def to_dict(self) -> dict:
+        """Serialize to dict for JSONL storage."""
+        return {
+            "entry_id": self.entry_id,
+            "timestamp": self.timestamp,
+            "task_hash": self.task_hash,
+            "task_description": self.task_description,
+            "file_path": self.file_path,
+            "verdict": self.verdict,
+            "reasoning": self.reasoning,
+            "issues": self.issues,
+            "principle_violated": self.principle_violated,
+            "category": self.category,
+            "was_applied": self.was_applied,
+            "applied_correctly": self.applied_correctly,
+            "retry_count": self.retry_count,
+            "why_this_matters": self.why_this_matters,
+            "severity": self.severity,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "MemoryEntry":
+        """Deserialize from dict."""
+        return cls(
+            entry_id=data.get("entry_id", ""),
+            timestamp=data.get("timestamp", ""),
+            task_hash=data.get("task_hash", ""),
+            task_description=data.get("task_description", ""),
+            file_path=data.get("file_path"),
+            verdict=data.get("verdict", "done"),
+            reasoning=data.get("reasoning", ""),
+            issues=data.get("issues", []),
+            principle_violated=data.get("principle_violated"),
+            category=data.get("category", "process"),
+            was_applied=data.get("was_applied", False),
+            applied_correctly=data.get("applied_correctly"),
+            retry_count=data.get("retry_count", 0),
+            why_this_matters=data.get("why_this_matters", ""),
+            severity=data.get("severity", "P2"),
+        )
+
+    def __repr__(self) -> str:
+        return (
+            f"MemoryEntry({self.verdict} | {self.task_description[:30]}... | "
+            f"applied={self.was_applied})"
+        )
 
 
 class EffortMemory:
@@ -202,6 +326,91 @@ class EffortMemory:
         if total == 0:
             return 0.0
         return redos / total
+
+    def principles(self) -> list[str]:
+        """
+        Extract all non-empty principle strings from entries.
+
+        Returns:
+            Deduplicated list of principles violated.
+        """
+        seen: set[str] = set()
+        result: list[str] = []
+        for entry in self.entries(limit=None):
+            principle = entry.get("principle") or ""
+            if principle and principle not in seen:
+                seen.add(principle)
+                result.append(principle)
+        return result
+
+    def entries_by_category(self, category: str) -> list[MemoryEntry]:
+        """
+        Get all entries for a specific category.
+
+        Args:
+            category: Category to filter by (e.g., "shortcut", "verification").
+
+        Returns:
+            List of MemoryEntry objects for that category.
+        """
+        return [
+            MemoryEntry.from_dict(e)
+            for e in self.entries(category_filter=category)
+        ]
+
+    def entries_by_verdict(self, verdict: str) -> list[MemoryEntry]:
+        """
+        Get all entries for a specific verdict.
+
+        Args:
+            verdict: Verdict to filter by (done/redo/fail).
+
+        Returns:
+            List of MemoryEntry objects for that verdict.
+        """
+        ev = EffortVerdict(verdict)
+        return [
+            MemoryEntry.from_dict(e)
+            for e in self.entries(verdict_filter=ev)
+        ]
+
+    def stats(self) -> dict:
+        """
+        Get comprehensive statistics about the memory store.
+
+        Returns:
+            Dict with total, verdict counts, application stats.
+        """
+        total = 0
+        verdict_counts: dict[str, int] = {"done": 0, "redo": 0, "fail": 0}
+        applied_count = 0
+        applied_correctly_count = 0
+
+        for entry in self.entries(limit=None):
+            total += 1
+            v = entry.get("verdict", "unknown")
+            if v in verdict_counts:
+                verdict_counts[v] += 1
+            if entry.get("was_applied"):
+                applied_count += 1
+                if entry.get("applied_correctly"):
+                    applied_correctly_count += 1
+
+        return {
+            "total": total,
+            "done": verdict_counts["done"],
+            "redo": verdict_counts["redo"],
+            "fail": verdict_counts["fail"],
+            "applied": applied_count,
+            "applied_correctly": applied_correctly_count,
+            "redo_rate": verdict_counts["redo"] / total if total > 0 else 0.0,
+            "application_rate": applied_count / total if total > 0 else 0.0,
+            "fix_rate": (
+                applied_correctly_count / applied_count
+                if applied_count > 0
+                else 0.0
+            ),
+        }
 
     # -------------------------------------------------------------------------
     # Deduplication
