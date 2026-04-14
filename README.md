@@ -1,6 +1,8 @@
 # effort-agent
 
-<img src="effortagentmascot.png" alt="effort-agent mascot" width="200" />
+<p align="center">
+  <img src="effortagentmascot.png" alt="effort-agent mascot" width="200" />
+</p>
 
 **"Your AI coding agent says 'Done.' after one pass. Then you find the bugs."**
 
