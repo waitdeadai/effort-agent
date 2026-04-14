@@ -1,6 +1,8 @@
 # effort-agent
 
-**Process Integrity Enforcer for Agentic Workflows**
+**"Your AI coding agent says 'Done.' after one pass. Then you find the bugs."**
+
+`effort-agent` ensures your AI coding agent actually does the work — thoroughly — on every iteration. Not just "good enough." Not just "should work." The actual work: verification, iteration, research, evidence. Write `effort.md` once (your process standards), then let `effort-agent` enforce it with `DONE | REDO | FAIL` verdicts.
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
